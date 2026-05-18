@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urdu News Verifier — Fake & Bias Detector</title>
+  <meta name="description"
+    content="AI-powered Urdu news authenticity detector. Classify news as Real, Biased, or Fake using Naive Bayes or TextCNN." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+
+      --bg: #0f172a;
+      --bg2: #111827;
+
+      --card: rgba(30, 41, 59, .72);
+
+      --border: rgba(255, 255, 255, .08);
+
+      --primary: #f8fafc;
+      --secondary: #94a3b8;
+
+      --accent: #4f46e5;
+      --accent2: #7c3aed;
+
+      --real: #22c55e;
+      --bias: #f59e0b;
+      --fake: #ef4444;
+
+      --radius: 18px;
+
+      --shadow:
+        0 8px 32px rgba(0, 0, 0, .25);
+
+    }
+
+
+    body {
+
+      background:
+        linear-gradient(135deg,
+          #0f172a,
+          #111827);
+
+      min-height: 100vh;
+
+      padding: 40px;
+
+      font-family: 'Inter', sans-serif;
+
+      color: var(--primary);
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+
+    body::before {
+
+      content: "";
+
+      position: fixed;
+
+      inset: 0;
+
+      background:
+
+        radial-gradient(circle at top left,
+          rgba(79, 70, 229, .15),
+          transparent 35%),
+
+        radial-gradient(circle at bottom right,
+          rgba(124, 58, 237, .10),
+          transparent 40%);
+
+      z-index: -1;
+    }
+
+
+    /* HEADER */
+
+    header {
+
+      width: 100%;
+      max-width: 1100px;
+
+      padding: 35px;
+
+      margin-bottom: 30px;
+
+      background: var(--card);
+
+      backdrop-filter: blur(20px);
+
+      border: 1px solid var(--border);
+
+      border-radius: var(--radius);
+
+      box-shadow: var(--shadow);
+
+    }
+
+
+    .badge {
+
+      display: inline-block;
+
+      padding: 8px 15px;
+
+      border-radius: 50px;
+
+      background: rgba(79, 70, 229, .18);
+
+      color: #c7d2fe;
+
+      font-size: 12px;
+
+      font-weight: 600;
+
+      margin-bottom: 18px;
+    }
+
+
+    header h1 {
+
+      font-size: 42px;
+
+      font-weight: 800;
+
+      margin-bottom: 12px;
+
+      background:
+        linear-gradient(90deg,
+          white,
+          #c7d2fe);
+
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+
+    header p {
+
+      font-family: 'Noto Nastaliq Urdu';
+
+      font-size: 16px;
+
+      color: var(--secondary);
+
+      line-height: 2;
+    }
+
+
+
+    /* MAIN CARD */
+
+    .card {
+
+      width: 100%;
+      max-width: 1100px;
+
+      padding: 35px;
+
+      background: var(--card);
+
+      backdrop-filter: blur(20px);
+
+      border-radius: var(--radius);
+
+      border: 1px solid var(--border);
+
+      box-shadow: var(--shadow);
+    }
+
+
+
+    /* MODEL BUTTONS */
+
+    .model-tabs {
+
+      display: flex;
+
+      gap: 12px;
+
+      margin-bottom: 25px;
+    }
+
+
+    .tab-btn {
+
+      flex: 1;
+
+      padding: 14px;
+
+      border-radius: 14px;
+
+      border: none;
+
+      background: rgba(255, 255, 255, .04);
+
+      color: var(--secondary);
+
+      font-size: 14px;
+
+      font-weight: 600;
+
+      cursor: pointer;
+
+      transition: .3s;
+    }
+
+
+    .tab-btn:hover {
+
+      background: rgba(255, 255, 255, .08);
+
+      transform: translateY(-2px);
+
+      color: white;
+    }
+
+
+    .tab-btn.active {
+
+      background:
+        linear-gradient(135deg,
+          var(--accent),
+          var(--accent2));
+
+      color: white;
+    }
+
+
+
+    /* INPUT */
+
+    #news-input {
+
+      width: 100%;
+
+      min-height: 180px;
+
+      padding: 20px;
+
+      border-radius: 16px;
+
+      background: #0f172a;
+
+      border: 1px solid var(--border);
+
+      color: white;
+
+      font-size: 18px;
+
+      font-family: 'Noto Nastaliq Urdu';
+
+      line-height: 2;
+
+      outline: none;
+
+      transition: .3s;
+    }
+
+
+    #news-input:focus {
+
+      border-color: var(--accent);
+
+      box-shadow:
+        0 0 0 4px rgba(79, 70, 229, .15);
+    }
+
+
+
+    /* BUTTON */
+
+    .btn-predict {
+
+      width: 100%;
+
+      margin-top: 25px;
+
+      padding: 16px;
+
+      border: none;
+
+      border-radius: 14px;
+
+      font-size: 15px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      color: white;
+
+      background:
+        linear-gradient(135deg,
+          var(--accent),
+          var(--accent2));
+
+      transition: .3s;
+    }
+
+
+    .btn-predict:hover {
+
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 10px 25px rgba(79, 70, 229, .35);
+    }
+
+
+
+    /* RESULT */
+
+    .result-card {
+
+      margin-top: 30px;
+
+      padding: 30px;
+
+      background: rgba(255, 255, 255, .04);
+
+      border-radius: 16px;
+
+      border: 1px solid var(--border);
+    }
+
+
+    .label-en {
+
+      font-size: 34px;
+
+      font-weight: 800;
+    }
+
+
+    .confidence-badge {
+
+      padding: 8px 14px;
+
+      background: rgba(255, 255, 255, .05);
+
+      border-radius: 50px;
+
+      font-size: 13px;
+    }
+
+
+
+    /* PROGRESS */
+
+    .prob-bar-wrap {
+
+      height: 8px;
+
+      background: rgba(255, 255, 255, .08);
+
+      border-radius: 20px;
+    }
+
+    .real {
+
+      background:
+        linear-gradient(90deg,
+          #16a34a,
+          #22c55e);
+    }
+
+    .bias {
+
+      background:
+        linear-gradient(90deg,
+          #d97706,
+          #f59e0b);
+    }
+
+    .fake {
+
+      background:
+        linear-gradient(90deg,
+          #dc2626,
+          #ef4444);
+    }
+
+
+
+    /* INFO CARDS */
+
+    .info-card {
+
+      padding: 24px;
+
+      background: var(--card);
+
+      backdrop-filter: blur(20px);
+
+      border-radius: 16px;
+
+      border: 1px solid var(--border);
+
+      transition: .3s;
+    }
+
+
+    .info-card:hover {
+
+      transform: translateY(-5px);
+
+      background:
+        rgba(255, 255, 255, .06);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="badge">AI News Detector • اردو خبر جانچ</div>
+    <h1>Urdu News Verifier</h1>
+    <p>خبر کو نیچے درج کریں اور ماڈل منتخب کریں تاکہ پتہ چلے کہ یہ حقیقی ہے، جانبدار ہے یا جھوٹی</p>
+  </header>
+
+  <!-- MAIN CARD -->
+  <div class="card" role="main">
+
+    <!-- MODEL SELECTOR -->
+    <div class="model-tabs" role="tablist" aria-label="Model selection">
+      <button id="tab-nb" class="tab-btn active" role="tab" aria-selected="true" data-model="nb"
+        onclick="selectModel('nb')">
+        <span class="tab-icon"></span> Naive Bayes
+      </button>
+      <button id="tab-cnn" class="tab-btn" role="tab" aria-selected="false" data-model="cnn"
+        onclick="selectModel('cnn')">
+        <span class="tab-icon"></span> TextCNN
+      </button>
+    </div>
+
+    <!-- TEXTAREA -->
+    <label class="input-label" for="news-input">خبر کا متن درج کریں</label>
+    <div class="textarea-wrap">
+      <textarea id="news-input" placeholder="یہاں اردو خبر لکھیں یا پیسٹ کریں…" rows="6" maxlength="2000"
+        aria-label="News text input" oninput="updateCharCount()"></textarea>
+      <span class="char-count" id="char-count">0 / 2000</span>
+    </div>
+
+    <!-- SUBMIT -->
+    <button id="predict-btn" class="btn-predict" onclick="runPrediction()" aria-label="Run prediction">
+      <span class="btn-icon" id="btn-icon"></span>
+      <span id="btn-text">تجزیہ کریں</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <!-- ERROR -->
+    <div id="error-panel" role="alert"></div>
+
+    <!-- RESULT -->
+    <div id="result-panel" aria-live="polite">
+      <div id="result-card" class="result-card">
+
+        <div class="result-top">
+          <div class="verdict">
+            <div class="verdict-icon" id="verdict-icon"></div>
+            <div class="verdict-text">
+              <div class="label-en" id="label-en">Real</div>
+              <div class="label-ur" id="label-ur">حقیقی خبر</div>
+            </div>
+          </div>
+          <div class="confidence-badge" id="conf-badge">98.5% اعتماد</div>
+        </div>
+
+        <!-- PROBABILITY BARS -->
+        <div class="prob-section">
+          <div class="prob-title">Class Probabilities</div>
+          <div class="prob-row">
+            <span class="prob-row-label" style="color:var(--real-clr)">Real</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar real" id="bar-real" style="width:0%"></div>
+            </div>
+            <span class="prob-val" id="val-real">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-row-label" style="color:var(--bias-clr)">Bias</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar bias" id="bar-bias" style="width:0%"></div>
+            </div>
+            <span class="prob-val" id="val-bias">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-row-label" style="color:var(--fake-clr)">Fake</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar fake" id="bar-fake" style="width:0%"></div>
+            </div>
+            <span class="prob-val" id="val-fake">0%</span>
+          </div>
+        </div>
+
+        <!-- META -->
+        <div class="meta-row" id="meta-row"></div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- INFO GRID -->
+  <div class="info-grid" style="max-width:720px;width:100%">
+    <div class="info-card">
+      <div class="ic-icon"></div>
+      <div class="ic-title">Real — حقیقی</div>
+      <div class="ic-desc">خبر مستند ذرائع سے تصدیق شدہ اور درست ہے</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-icon"></div>
+      <div class="ic-title">Bias — جانبداری</div>
+      <div class="ic-desc">خبر میں جانبداری یا مبالغہ آرائی کا عنصر موجود ہے</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-icon"></div>
+      <div class="ic-title">Fake — جھوٹی</div>
+      <div class="ic-desc">خبر گمراہ کن، من گھڑت یا پروپیگنڈا پر مبنی ہے</div>
+    </div>
+  </div>
+
+  <footer>
+    Built with Naive Bayes &amp; TextCNN (from scratch, NumPy only) &nbsp;·&nbsp; Urdu NLP Pipeline
+  </footer>
+
+  <script>
+    /* ─── state ─────────────────────────────────────────── */
+    let selectedModel = 'nb';
+
+    const LABEL_META = {
+      Real: { icon: '', ur: 'حقیقی خبر', cls: 'real' },
+      Bias: { icon: '', ur: 'جانبدار خبر', cls: 'bias' },
+      Fake: { icon: '', ur: 'جھوٹی خبر', cls: 'fake' },
+    };
+
+    /* ─── model tabs ────────────────────────────────────── */
+    function selectModel(m) {
+      selectedModel = m;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.model === m);
+        b.setAttribute('aria-selected', b.dataset.model === m);
+      });
+    }
+
+    /* ─── char count ────────────────────────────────────── */
+    function updateCharCount() {
+      const len = document.getElementById('news-input').value.length;
+      document.getElementById('char-count').textContent = `${len} / 2000`;
+    }
+
+    /* ─── helpers ───────────────────────────────────────── */
+    function showError(msg) {
+      const ep = document.getElementById('error-panel');
+      ep.textContent = '⚠️ ' + msg;
+      ep.style.display = 'block';
+      document.getElementById('result-panel').style.display = 'none';
+    }
+    function hideError() {
+      document.getElementById('error-panel').style.display = 'none';
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('predict-btn');
+      const spinner = document.getElementById('spinner');
+      const icon = document.getElementById('btn-icon');
+      const txt = document.getElementById('btn-text');
+      btn.disabled = on;
+      spinner.style.display = on ? 'block' : 'none';
+      icon.style.display = on ? 'none' : 'inline';
+      txt.textContent = on ? 'تجزیہ ہو رہا ہے…' : 'تجزیہ کریں';
+    }
+
+    /* ─── render result ─────────────────────────────────── */
+    function showResult(data) {
+      const panel = document.getElementById('result-panel');
+      const card = document.getElementById('result-card');
+      const meta = LABEL_META[data.label] || LABEL_META['Fake'];
+
+      // reset animation
+      panel.style.display = 'none';
+      void panel.offsetWidth;
+
+      // label class
+      card.className = `result-card ${meta.cls}`;
+
+      document.getElementById('verdict-icon').textContent = meta.icon;
+      document.getElementById('label-en').textContent = data.label;
+      document.getElementById('label-ur').textContent = meta.ur;
+      document.getElementById('conf-badge').textContent = `${data.confidence}% اعتماد`;
+
+      // bars — reset first, then animate
+      const probs = data.probabilities;  // { Real: x, Bias: y, Fake: z }
+      ['Real', 'Bias', 'Fake'].forEach(lbl => {
+        const key = lbl.toLowerCase();
+        const val = probs[lbl] ?? 0;
+        const bar = document.getElementById(`bar-${key}`);
+        const txt = document.getElementById(`val-${key}`);
+        bar.style.width = '0%';
+        txt.textContent = '0%';
+        setTimeout(() => {
+          bar.style.width = `${val}%`;
+          txt.textContent = `${val}%`;
+        }, 60);
+      });
+
+      // meta chips
+      const mr = document.getElementById('meta-row');
+      mr.innerHTML = `
+      <span class="chip"> ${data.model_used}</span>
+      <span class="chip"> ${data.token_count} tokens</span>
+      <span class="chip"> ${data.confidence}% confidence</span>
+    `;
+
+      panel.style.display = 'block';
+    }
+
+    /* ─── main predict ──────────────────────────────────── */
+    async function runPrediction() {
+      const text = document.getElementById('news-input').value.trim();
+      if (!text) { showError('براہ کرم پہلے خبر کا متن درج کریں۔'); return; }
+
+      hideError();
+      setLoading(true);
+
+      try {
+        const resp = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, model: selectedModel }),
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          showError(data.error || 'Server error — please try again.');
+        } else {
+          showResult(data);
+        }
+      } catch (err) {
+        showError('Connection error: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    /* ─── keyboard shortcut: Ctrl+Enter ─────────────────── */
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runPrediction();
+    });
+  </script>
+</body>
+
+</html>
