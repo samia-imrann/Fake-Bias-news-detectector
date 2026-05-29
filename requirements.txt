@@ -5,4 +5,4 @@ matplotlib
 scikit-learn
 scipy
 regex
-tensorflow
+tensorflow==2.15.0
